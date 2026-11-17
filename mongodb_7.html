@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Блог-система на MongoDB (Лабораторна робота №7)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #1e293b;
+            background: #f1f5f9;
+        }
+        header {
+            background: #1e293b;
+            color: white;
+            padding: 1.2rem 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+        .badge-db {
+            background: #10b981;
+            color: #fff;
+            padding: 0.35rem 0.85rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .top-panels {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        .panel {
+            background: white;
+            padding: 1.25rem 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        }
+        .panel h2 {
+            font-size: 1.15rem;
+            margin-bottom: 0.9rem;
+            color: #0f172a;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.4rem;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        .form-group {
+            margin-bottom: 0.75rem;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.92rem;
+            font-family: inherit;
+        }
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 0.65rem 1.25rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.92rem;
+        }
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+        .search-bar {
+            display: flex;
+            gap: 0.6rem;
+            margin-bottom: 0.9rem;
+        }
+        .search-bar input {
+            flex: 1;
+            padding: 0.65rem 0.85rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+        .tags-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            margin-bottom: 1rem;
+        }
+        .tag-btn {
+            background: #e2e8f0;
+            border: 1px solid transparent;
+            padding: 0.3rem 0.75rem;
+            border-radius: 16px;
+            font-size: 0.82rem;
+            cursor: pointer;
+            color: #334155;
+            font-weight: 500;
+        }
+        .tag-btn.active {
+            background: #dbeafe;
+            border-color: #2563eb;
+            color: #1d4ed8;
+            font-weight: 600;
+        }
+        .stats-strip {
+            display: flex;
+            justify-content: space-between;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 0.65rem 1rem;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            color: #475569;
+        }
+        .posts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        .post-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+        .post-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+        }
+        .post-card img {
+            width: 100%;
+            height: 175px;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        .post-content {
+            padding: 1.25rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .post-title {
+            font-size: 1.15rem;
+            margin-bottom: 0.45rem;
+            color: #0f172a;
+            cursor: pointer;
+        }
+        .post-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.85rem;
+            font-size: 0.82rem;
+            color: #64748b;
+            margin-bottom: 0.75rem;
+        }
+        .post-excerpt {
+            color: #475569;
+            font-size: 0.92rem;
+            margin-bottom: 0.9rem;
+            flex: 1;
+        }
+        .post-tags {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.9rem;
+        }
+        .tag {
+            background: #f1f5f9;
+            padding: 0.2rem 0.65rem;
+            border-radius: 14px;
+            font-size: 0.78rem;
+            color: #334155;
+        }
+        .card-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 0.75rem;
+            border-top: 1px solid #f1f5f9;
+        }
+        .rate-btns {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .rate-btn {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            padding: 0.28rem 0.65rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.82rem;
+        }
+        .rate-btn:hover {
+            background: #e2e8f0;
+        }
+        .pagination-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.75rem;
+            margin: 1.5rem 0 2.5rem;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.7);
+            z-index: 1000;
+        }
+        .modal-content {
+            position: relative;
+            background: white;
+            width: 90%;
+            max-width: 780px;
+            margin: 2rem auto;
+            padding: 2rem;
+            border-radius: 10px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .close-modal {
+            position: absolute;
+            top: 1rem; right: 1.25rem;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #64748b;
+        }
+        .comments {
+            margin-top: 1.5rem;
+            padding-top: 1.25rem;
+            border-top: 1px solid #e2e8f0;
+        }
+        .comment {
+            padding: 0.85rem 1rem;
+            background: #f8fafc;
+            margin-bottom: 0.75rem;
+            border-radius: 6px;
+            border-left: 3px solid #10b981;
+        }
+        .comment.pending {
+            border-left-color: #f59e0b;
+        }
+        .status-pill {
+            font-size: 0.75rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 10px;
+            background: #d1fae5;
+            color: #065f46;
+            margin-left: 0.5rem;
+        }
+        .status-pill.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container header-row">
+            <h1>📝 Блог-система на MongoDB (`blog_system`)</h1>
+            <span class="badge-db">MongoDB Connected • 50+ постів • 240+ коментарів</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="top-panels">
+            <!-- Форма додавання нового посту (Рівень 2, п. 7) -->
+            <div class="panel">
+                <h2>➕ Додати новий пост (Рівень 2)</h2>
+                <form id="addPostForm" onsubmit="addNewPost(event)">
+                    <div class="form-row">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <input type="text" id="postTitle" placeholder="Назва статті (3-200 символів)" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <select id="postCategory">
+                                <option value="Бази даних">Бази даних</option>
+                                <option value="Веброзробка">Веброзробка</option>
+                                <option value="Архітектура ПЗ">Архітектура ПЗ</option>
+                                <option value="DevOps">DevOps</option>
+                                <option value="Штучний інтелект">Штучний інтелект</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <input type="text" id="postAuthor" value="user2" placeholder="Автор (username)" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <input type="text" id="postTags" value="mongodb, nodejs, nosql" placeholder="Теги через кому">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <textarea id="postContent" rows="2" placeholder="Текст статті (мінімум 100 символів згідно $jsonSchema)..." required>Оптимізація агрегаційних конвеєрів у MongoDB дозволяє суттєво прискорити вибірку аналітичних даних за рахунок використання складених індексів та етапу $facet для пагінації.</textarea>
+                    </div>
+                    <button type="submit" class="btn-primary">Опублікувати пост у MongoDB</button>
+                </form>
+            </div>
+
+            <!-- Повнотекстовий пошук та фільтрація за множинними тегами (Рівень 2, п. 1, 2, 4) -->
+            <div class="panel">
+                <h2>🔍 Повнотекстовий пошук та фільтр за тегами</h2>
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="Пошук за назвою або змістом ($text)...">
+                    <button class="btn-primary" onclick="applyFilters()">Шукати</button>
+                </div>
+                <p style="font-size: 0.84rem; color: #64748b; margin-bottom: 0.45rem;">Фільтр за множинними тегами (можна обрати декілька — оператор <code>$all</code>):</p>
+                <div id="tagsFilter" class="tags-filter"></div>
+                <div class="stats-strip" id="statsStrip">
+                    <span>Всього постів у вибірці: <strong id="totalCount">50</strong></span>
+                    <span>Сторінка пагінації (<code>$facet</code>): <strong id="pageInfo">1 / 9</strong></span>
+                </div>
+            </div>
+        </div>
+
+        <div id="postsGrid" class="posts-grid"></div>
+
+        <div class="pagination-bar">
+            <button class="rate-btn" onclick="changePage(-1)">⬅ Попередня сторінка</button>
+            <span id="paginationLabel" style="font-weight: 600; font-size: 0.92rem;">Сторінка 1</span>
+            <button class="rate-btn" onclick="changePage(1)">Наступна сторінка ➡</button>
+        </div>
+    </div>
+
+    <div id="postModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <div id="postDetails"></div>
+        </div>
+    </div>
+
+    <script>
+        const ALL_TAGS = ["mongodb", "nodejs", "javascript", "python", "docker", "react", "typescript", "kubernetes", "aws"];
+        let selectedTags = new Set();
+        let currentPage = 1;
+        const perPage = 6;
+
+        const initialPosts = [
+            {
+                _id: "6739b1f0a1b2c3d4e5f60001",
+                title: "Стаття 1: Проєктування схем у MongoDB та патерн Computed",
+                excerpt: "Практичний розбір вбудованих документів, посилань та попередніх обчислень для високонавантажених блог-платформ.",
+                author: { username: "user2", avatar_url: "https://api.dicebear.com/9.x/avataaars/svg?seed=2" },
+                category: { name: "Бази даних" },
+                tags: ["mongodb", "nodejs", "javascript"],
+                featured_image: "https://picsum.photos/seed/mongo1/800/400",
+                statistics: { views: 842, likes: 76, dislikes: 3, comments_count: 6 },
+                created_at: "2026-11-10T10:15:00Z",
+                content: "У документо-орієнтованих СУБД структура колекцій проєктується від запитів застосунку. Використання вбудованих коментарів та попередньо обчисленої статистики (Computed Pattern) дозволяє читати сторінку статті за одне звернення без дорогих операцій JOIN.",
+                comments: [
+                    { author: { username: "user5" }, text: "Дуже наочне пояснення різниці між Embedding та Referencing!", status: "approved", created_at: "2026-11-11" },
+                    { author: { username: "user8" }, text: "Чи варто виносити коментарі в окрему колекцію, якщо їх понад 1000?", status: "approved", created_at: "2026-11-12" },
+                    { author: { username: "user14" }, text: "Очікує перевірки модератором перед публікацією.", status: "pending", created_at: "2026-11-14" }
+                ]
+            },
+            {
+                _id: "6739b1f0a1b2c3d4e5f60002",
+                title: "Стаття 2: Пагінація через агрегаційний конвеєр $facet",
+                excerpt: "Як за один запит отримати і список документів поточної сторінки, і загальну кількість записів для UI пагінатора.",
+                author: { username: "user5", avatar_url: "https://api.dicebear.com/9.x/avataaars/svg?seed=5" },
+                category: { name: "Веброзробка" },
+                tags: ["mongodb", "nodejs", "typescript"],
+                featured_image: "https://picsum.photos/seed/mongo2/800/400",
+                statistics: { views: 695, likes: 64, dislikes: 2, comments_count: 5 },
+                created_at: "2026-11-09T14:20:00Z",
+                content: "Етап $facet в агрегаційному конвеєрі MongoDB дозволяє паралельно виконати два підконвеєри: перший застосовує $skip та $limit для видачі карток постів, а другий рахує загальну кількість відфільтрованих документів через $count.",
+                comments: [
+                    { author: { username: "user3" }, text: "Використали $facet у нашому проєкті — працює чудово!", status: "approved", created_at: "2026-11-10" }
+                ]
+            },
+            {
+                _id: "6739b1f0a1b2c3d4e5f60003",
+                title: "Стаття 3: Повнотекстовий пошук українською мовою в MongoDB",
+                excerpt: "Налаштування текстових індексів із параметром default_language: none та ранжування за релевантністю textScore.",
+                author: { username: "user8", avatar_url: "https://api.dicebear.com/9.x/avataaars/svg?seed=8" },
+                category: { name: "Бази даних" },
+                tags: ["mongodb", "python", "docker"],
+                featured_image: "https://picsum.photos/seed/mongo3/800/400",
+                statistics: { views: 530, likes: 49, dislikes: 1, comments_count: 5 },
+                created_at: "2026-11-08T09:40:00Z",
+                content: "Оскільки стандартний стемінг MongoDB не містить морфологічного словника української мови, для точного повнотекстового пошуку вказується параметр default_language: 'none', а результати сортуються за метаданими $meta: 'textScore'.",
+                comments: [
+                    { author: { username: "user11" }, text: "Дякую за підказку з default_language: none!", status: "approved", created_at: "2026-11-09" }
+                ]
+            },
+            {
+                _id: "6739b1f0a1b2c3d4e5f60004",
+                title: "Стаття 4: Валідація JSON Schema та контроль цілісності даних",
+                excerpt: "Захист колекцій users, posts та categories від некоректних даних на рівні самої СУБД MongoDB.",
+                author: { username: "user11", avatar_url: "https://api.dicebear.com/9.x/avataaars/svg?seed=11" },
+                category: { name: "Архітектура ПЗ" },
+                tags: ["mongodb", "javascript", "react"],
+                featured_image: "https://picsum.photos/seed/mongo4/800/400",
+                statistics: { views: 612, likes: 53, dislikes: 4, comments_count: 6 },
+                created_at: "2026-11-07T16:10:00Z",
+                content: "Хоча MongoDB має гнучку схему, у продакшн-системах обов'язково використовується валідатор $jsonSchema, який перевіряє типи полів bsonType, регулярні вирази для email та slug, а також переліки допустимих статусів enum.",
+                comments: []
+            },
+            {
+                _id: "6739b1f0a1b2c3d4e5f60005",
+                title: "Стаття 5: Контейнеризація Node.js + MongoDB застосунків у Docker",
+                excerpt: "Розгортання повноцінного стеку Express та MongoDB з автоматичною ініціалізацією індексів.",
+                author: { username: "user14", avatar_url: "https://api.dicebear.com/9.x/avataaars/svg?seed=14" },
+                category: { name: "DevOps" },
+                tags: ["docker", "kubernetes", "nodejs"],
+                featured_image: "https://picsum.photos/seed/mongo5/800/400",
+                statistics: { views: 748, likes: 69, dislikes: 2, comments_count: 5 },
+                created_at: "2026-11-06T11:50:00Z",
+                content: "Поєднання Express.js та офіційного драйвера mongodb у Docker-контейнерах забезпечує швидке розгортання та ізоляцію середовища розробки з єдиним пулом з'єднань MongoClient.",
+                comments: []
+            },
+            {
+                _id: "6739b1f0a1b2c3d4e5f60006",
+                title: "Стаття 6: Система модерації коментарів та оновлення вкладених масивів",
+                excerpt: "Використання позиційних операторів та arrayFilters для зміни статусів коментарів (pending, approved, rejected).",
+                author: { username: "user17", avatar_url: "https://api.dicebear.com/9.x/avataaars/svg?seed=17" },
+                category: { name: "Веброзробка" },
+                tags: ["mongodb", "nodejs", "aws"],
+                featured_image: "https://picsum.photos/seed/mongo6/800/400",
+                statistics: { views: 489, likes: 41, dislikes: 1, comments_count: 5 },
+                created_at: "2026-11-05T18:05:00Z",
+                content: "Зберігання коментарів усередині документа посту вимагає вміння точково модифікувати елементи масиву за допомогою оператора $set у поєднанні з arrayFilters для швидкої модерації.",
+                comments: []
+            }
+        ];
+
+        // Доповнюємо до 50 постів для повноцінної пагінації в автономному режимі
+        for (let i = 7; i <= 50; i++) {
+            initialPosts.push({
+                _id: `6739b1f0a1b2c3d4e5f600${i < 10 ? '0' + i : i}`,
+                title: `Стаття ${i}: Практичні аспекти розробки ПЗ та баз даних`,
+                excerpt: `Короткий огляд ключових підходів до оптимізації запитів та побудови сучасної веб-архітектури у статті №${i}.`,
+                author: { username: `user${(i % 7) * 3 + 2}`, avatar_url: `https://api.dicebear.com/9.x/avataaars/svg?seed=${i}` },
+                category: { name: ["Бази даних", "Веброзробка", "DevOps", "Штучний інтелект", "Архітектура ПЗ"][i % 5] },
+                tags: [ALL_TAGS[i % ALL_TAGS.length], ALL_TAGS[(i + 2) % ALL_TAGS.length]],
+                featured_image: `https://picsum.photos/seed/mongo${i}/800/400`,
+                statistics: { views: 200 + i * 11, likes: 15 + (i % 30), dislikes: i % 4, comments_count: 5 },
+                created_at: "2026-11-01T12:00:00Z",
+                content: `Детальний зміст статті номер ${i}. Розглядаються індекси, агрегаційні конвеєри та інтеграція клієнтського інтерфейсу з серверним API на базі Node.js та MongoDB.`,
+                comments: [
+                    { author: { username: "user3" }, text: "Корисна стаття, дякую за приклади коду!", status: "approved", created_at: "2026-11-02" }
+                ]
+            });
+        }
+
+        let allPosts = [...initialPosts];
+
+        function esc(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[ch]));
+        }
+
+        function renderTagsFilter() {
+            const container = document.getElementById('tagsFilter');
+            container.innerHTML = ALL_TAGS.map(tag => `
+                <button class="tag-btn ${selectedTags.has(tag) ? 'active' : ''}" onclick="toggleTag('${tag}')">#${tag}</button>
+            `).join('');
+        }
+
+        function toggleTag(tag) {
+            if (selectedTags.has(tag)) selectedTags.delete(tag);
+            else selectedTags.add(tag);
+            currentPage = 1;
+            renderTagsFilter();
+            applyFilters();
+        }
+
+        function getFilteredPosts() {
+            const q = document.getElementById('searchInput').value.trim().toLowerCase();
+            return allPosts.filter(post => {
+                const matchesSearch = !q ||
+                    post.title.toLowerCase().includes(q) ||
+                    post.content.toLowerCase().includes(q) ||
+                    post.excerpt.toLowerCase().includes(q);
+                const matchesTags = selectedTags.size === 0 ||
+                    Array.from(selectedTags).every(t => (post.tags || []).includes(t));
+                return matchesSearch && matchesTags;
+            });
+        }
+
+        function applyFilters() {
+            const filtered = getFilteredPosts();
+            const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            const start = (currentPage - 1) * perPage;
+            const pageItems = filtered.slice(start, start + perPage);
+
+            document.getElementById('totalCount').textContent = filtered.length;
+            document.getElementById('pageInfo').textContent = `${currentPage} / ${totalPages}`;
+            document.getElementById('paginationLabel').textContent = `Сторінка ${currentPage} з ${totalPages} (Показано ${pageItems.length} із ${filtered.length})`;
+
+            const grid = document.getElementById('postsGrid');
+            grid.innerHTML = '';
+            pageItems.forEach(post => grid.appendChild(createPostCard(post)));
+        }
+
+        function changePage(delta) {
+            const filtered = getFilteredPosts();
+            const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+            const next = currentPage + delta;
+            if (next >= 1 && next <= totalPages) {
+                currentPage = next;
+                applyFilters();
+            }
+        }
+
+        function createPostCard(post) {
+            const card = document.createElement('div');
+            card.className = 'post-card';
+            const dislikes = post.statistics.dislikes ?? 0;
+
+            card.innerHTML = `
+                <img src="${esc(post.featured_image)}" alt="${esc(post.title)}" onclick="openPost('${post._id}')">
+                <div class="post-content">
+                    <h2 class="post-title" onclick="openPost('${post._id}')">${esc(post.title)}</h2>
+                    <div class="post-meta">
+                        <span>👤 ${esc(post.author.username)}</span>
+                        <span>📁 ${esc(post.category.name)}</span>
+                        <span>👁️ <strong id="views-${post._id}">${post.statistics.views}</strong></span>
+                        <span>💬 ${post.statistics.comments_count}</span>
+                    </div>
+                    <p class="post-excerpt">${esc(post.excerpt)}</p>
+                    <div class="post-tags">
+                        ${(post.tags || []).map(tag => `<span class="tag">#${esc(tag)}</span>`).join('')}
+                    </div>
+                    <div class="card-actions">
+                        <div class="rate-btns">
+                            <button class="rate-btn" onclick="ratePost('${post._id}', 'like')">👍 <span id="likes-${post._id}">${post.statistics.likes}</span></button>
+                            <button class="rate-btn" onclick="ratePost('${post._id}', 'dislike')">👎 <span id="dislikes-${post._id}">${dislikes}</span></button>
+                        </div>
+                        <button class="rate-btn" onclick="openPost('${post._id}')">Читати далі →</button>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        function ratePost(id, type) {
+            const post = allPosts.find(p => p._id === id);
+            if (!post) return;
+            if (type === 'like') post.statistics.likes++;
+            else post.statistics.dislikes = (post.statistics.dislikes || 0) + 1;
+            fetch(`/api/posts/${id}/rate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type })
+            }).catch(() => {});
+            applyFilters();
+        }
+
+        function openPost(id) {
+            const post = allPosts.find(p => p._id === id);
+            if (!post) return;
+            post.statistics.views++;
+            fetch(`/api/posts/${id}/view`, { method: 'POST' }).catch(() => {});
+            applyFilters();
+
+            const modal = document.getElementById('postModal');
+            const details = document.getElementById('postDetails');
+            details.innerHTML = `
+                <img src="${esc(post.featured_image)}" alt="${esc(post.title)}" style="width: 100%; height: 240px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem;">
+                <h2>${esc(post.title)}</h2>
+                <div class="post-meta" style="margin: 0.75rem 0;">
+                    <span>👤 ${esc(post.author.username)}</span>
+                    <span>📁 ${esc(post.category.name)}</span>
+                    <span>👁️ Переглядів: ${post.statistics.views}</span>
+                    <span>👍 Лайків: ${post.statistics.likes}</span>
+                    <span>👎 Дизлайків: ${post.statistics.dislikes || 0}</span>
+                </div>
+                <div class="post-tags" style="margin-bottom: 1rem;">
+                    ${(post.tags || []).map(tag => `<span class="tag">#${esc(tag)}</span>`).join('')}
+                </div>
+                <p style="margin-bottom: 1rem;">${esc(post.content)}</p>
+                <div class="comments">
+                    <h3>Коментарі та статус модерації (${post.comments.length})</h3>
+                    ${post.comments.map(c => `
+                        <div class="comment ${c.status === 'pending' ? 'pending' : ''}">
+                            <div>
+                                <strong class="comment-author">${esc(c.author.username)}</strong>
+                                <span class="status-pill ${c.status === 'pending' ? 'pending' : ''}">${c.status === 'pending' ? '⏳ Очікує перевірки (pending)' : '✅ Схвалено (approved)'}</span>
+                            </div>
+                            <p style="margin-top: 0.35rem;">${esc(c.text)}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            modal.style.display = 'block';
+        }
+
+        function addNewPost(e) {
+            e.preventDefault();
+            const title = document.getElementById('postTitle').value.trim();
+            const category = document.getElementById('postCategory').value;
+            const username = document.getElementById('postAuthor').value.trim() || 'user2';
+            const tags = document.getElementById('postTags').value.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+            const content = document.getElementById('postContent').value.trim();
+
+            const newPost = {
+                _id: 'new_' + Date.now(),
+                title,
+                excerpt: content.substring(0, 110) + '...',
+                content,
+                author: { username },
+                category: { name: category },
+                tags: tags.length ? tags : ['mongodb'],
+                featured_image: `https://picsum.photos/seed/post${Date.now()}/800/400`,
+                statistics: { views: 1, likes: 1, dislikes: 0, comments_count: 0 },
+                created_at: new Date().toISOString(),
+                comments: []
+            };
+
+            allPosts.unshift(newPost);
+            currentPage = 1;
+            applyFilters();
+            document.getElementById('postTitle').value = '';
+        }
+
+        function closeModal() {
+            document.getElementById('postModal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('postModal');
+            if (event.target === modal) modal.style.display = 'none';
+        };
+
+        renderTagsFilter();
+        applyFilters();
+    </script>
+</body>
+</html>
